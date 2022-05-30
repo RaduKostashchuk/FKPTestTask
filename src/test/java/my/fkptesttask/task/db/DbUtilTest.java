@@ -1,7 +1,6 @@
 package my.fkptesttask.task.db;
 
 import my.fkptesttask.model.FileEntry;
-import my.fkptesttask.model.FileEntryKey;
 import my.fkptesttask.service.FileEntryService;
 import my.fkptesttask.service.TaskExecutionService;
 import my.fkptesttask.task.Task;
@@ -10,14 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.StreamSupport;
 
+import static my.fkptesttask.task.db.DbUtil.updateDb;
 import static org.junit.jupiter.api.Assertions.*;
 import static my.fkptesttask.task.db.DbUtil.saveTaskExecution;
-import static my.fkptesttask.task.db.DbUtil.updateDuplicates;
 
 @SpringBootTest
 class DbUtilTest {
@@ -35,16 +33,15 @@ class DbUtilTest {
     public void whenSaveTaskExecutionThenDbUpdated() {
         int duplicateCount = 10;
         saveTaskExecution(duplicateCount, taskExecutionService);
-        assertEquals(duplicateCount, taskExecutionService.findAll().iterator().next().getDuplicateCount());
+        assertTrue(taskExecutionService.findAll().iterator().hasNext());
     }
 
     @Test
-    public void whenSaveTwoFileEntriesThenDbContainsTwoFileEntries() {
-        FileEntryKey key = FileEntryKey.of(1000L, "hash");
+    public void whenSaveTwoEqualFileEntriesThenDbContainsTwoFileEntries() {
         FileEntry file1 = FileEntry.of("file1.txt", "c://temp", 1000L, "hash");
         FileEntry file2 = FileEntry.of("file2.txt", "c://temp//dir", 1000L, "hash");
-        Map<FileEntryKey, List<FileEntry>> duplicates = Map.of(key, List.of(file1, file2));
-        updateDuplicates(duplicates, fileEntryService);
+        List<FileEntry> files = List.of(file1, file2);
+        updateDb(files, taskExecutionService, fileEntryService);
         List<FileEntry> result = StreamSupport.stream(fileEntryService.findAll().spliterator(), false).toList();
         assertAll(
                 () -> assertEquals(2, result.size()),
@@ -55,13 +52,12 @@ class DbUtilTest {
 
     @Test
     public void whenSaveEmptyFileEntriesMapThenDbCleared() {
-        FileEntryKey key = FileEntryKey.of(1000L, "hash");
         FileEntry file1 = FileEntry.of("file1.txt", "c://temp", 1000L, "hash");
         FileEntry file2 = FileEntry.of("file2.txt", "c://temp//dir", 1000L, "hash");
-        Map<FileEntryKey, List<FileEntry>> duplicates = Map.of(key, List.of(file1, file2));
-        updateDuplicates(duplicates, fileEntryService);
-        duplicates = new HashMap<>();
-        updateDuplicates(duplicates, fileEntryService);
+        List<FileEntry> files = List.of(file1, file2);
+        updateDb(files, taskExecutionService, fileEntryService);
+        files = new ArrayList<>();
+        updateDb(files, taskExecutionService, fileEntryService);
         assertFalse(fileEntryService.findAll().iterator().hasNext());
     }
 

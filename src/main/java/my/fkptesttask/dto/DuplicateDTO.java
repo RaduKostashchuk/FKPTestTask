@@ -32,4 +32,8 @@ public class DuplicateDTO {
     public List<FileDTO> getFiles() {
         return files;
     }
+
+    public void addFile(FileDTO fileDTO) {
+        files.add(fileDTO);
+    }
 }

@@ -7,10 +7,7 @@ import my.fkptesttask.model.FileEntryKey;
 import my.fkptesttask.repository.FileEntryRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FileEntryService {
@@ -32,29 +29,22 @@ public class FileEntryService {
         repository.save(fileEntry);
     }
 
-    public List<DuplicateDTO> findAllDuplicates() {
-        List<DuplicateDTO> result = new ArrayList<>();
-        Map<FileEntryKey, List<FileDTO>> map = new HashMap<>();
+    public Collection<DuplicateDTO> findAllDuplicates() {
+        Map<FileEntryKey, DuplicateDTO> duplicates = new HashMap<>();
 
         for (FileEntry file : repository.findAll()) {
             FileEntryKey key = FileEntryKey.of(file.getSize(), file.getHash());
-            map.computeIfPresent(key, (k, v) -> {
-                v.add(FileDTO.of(file));
+            duplicates.computeIfPresent(key, (k, v) -> {
+                v.addFile(FileDTO.of(file));
                 return v;
             });
-            map.computeIfAbsent(key, k -> {
-                List<FileDTO> list = new ArrayList<>();
-                list.add(FileDTO.of(file));
-                return list;
+            duplicates.computeIfAbsent(key, k -> {
+                DuplicateDTO duplicateDTO = DuplicateDTO.of(key);
+                duplicateDTO.addFile(FileDTO.of(file));
+                return duplicateDTO;
             });
         }
 
-        for (FileEntryKey key : map.keySet()) {
-            DuplicateDTO duplicate = DuplicateDTO.of(key);
-            duplicate.setFiles(map.get(key));
-            result.add(duplicate);
-        }
-
-        return result;
+        return duplicates.values();
     }
 }

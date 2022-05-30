@@ -6,14 +6,21 @@ import my.fkptesttask.model.TaskExecution;
 import my.fkptesttask.service.FileEntryService;
 import my.fkptesttask.service.TaskExecutionService;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class DbUtil {
+
+    public static void updateDb(List<FileEntry> files,
+                                TaskExecutionService taskExecutionService,
+                                FileEntryService fileEntryService) {
+        Map<FileEntryKey, List<FileEntry>> duplicates = getDuplicates(files);
+        int duplicateCount = duplicates.keySet().size();
+
+        saveTaskExecution(duplicateCount, taskExecutionService);
+        saveDuplicates(duplicates, fileEntryService);
+    }
 
     public static void saveTaskExecution(int duplicateCount, TaskExecutionService taskExecutionService) {
         TaskExecution taskExecution = new TaskExecution();
@@ -21,8 +28,8 @@ public class DbUtil {
         taskExecutionService.save(taskExecution);
     }
 
-    public static void updateDuplicates(Map<FileEntryKey, List<FileEntry>> duplicates,
-                                 FileEntryService fileEntryService) {
+    public static void saveDuplicates(Map<FileEntryKey, List<FileEntry>> duplicates,
+                                        FileEntryService fileEntryService) {
         Set<FileEntry> filesFromDb = StreamSupport.stream(fileEntryService.findAll().spliterator(), false)
                 .collect(Collectors.toSet());
         Set<FileEntry> inputFiles = new HashSet<>();
@@ -40,5 +47,26 @@ public class DbUtil {
                 fileEntryService.save(inputEntry);
             }
         }
+    }
+
+    private static Map<FileEntryKey, List<FileEntry>> getDuplicates(List<FileEntry> files) {
+        Map<FileEntryKey, List<FileEntry>> duplicates = new HashMap<>();
+
+        for (FileEntry fileEntry : files) {
+            FileEntryKey key = FileEntryKey.of(fileEntry.getSize(), fileEntry.getHash());
+            duplicates.computeIfPresent(key, (k, v) -> {
+                v.add(fileEntry);
+                return v;
+            });
+            duplicates.computeIfAbsent(key, k -> {
+                List<FileEntry> fileEntries = new ArrayList<>();
+                fileEntries.add(fileEntry);
+                return fileEntries;
+            });
+        }
+
+        duplicates.entrySet().removeIf(v -> v.getValue().size() < 2);
+
+        return duplicates;
     }
 }

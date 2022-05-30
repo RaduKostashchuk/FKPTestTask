@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.util.Collection;
 
 @RestController
 public class FileEntryController {
@@ -24,7 +24,7 @@ public class FileEntryController {
     }
 
     @GetMapping("/duplicate")
-    public ResponseEntity<List<DuplicateDTO>> getAllDuplicates() {
+    public ResponseEntity<Collection<DuplicateDTO>> getAllDuplicates() {
         return new ResponseEntity<>(fileEntryService.findAllDuplicates(), HttpStatus.OK);
     }
 
