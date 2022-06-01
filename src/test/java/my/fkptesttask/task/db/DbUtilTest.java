@@ -13,9 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
-import static my.fkptesttask.task.db.DbUtil.updateDb;
 import static org.junit.jupiter.api.Assertions.*;
-import static my.fkptesttask.task.db.DbUtil.saveTaskExecution;
 
 @SpringBootTest
 class DbUtilTest {
@@ -29,10 +27,13 @@ class DbUtilTest {
     @Autowired
     FileEntryService fileEntryService;
 
+    @Autowired
+    DbUtil dbUtil;
+
     @Test
     public void whenSaveTaskExecutionThenDbUpdated() {
         int duplicateCount = 10;
-        saveTaskExecution(duplicateCount, taskExecutionService);
+        dbUtil.saveTaskExecution(duplicateCount);
         assertTrue(taskExecutionService.findAll().iterator().hasNext());
     }
 
@@ -41,7 +42,7 @@ class DbUtilTest {
         FileEntry file1 = FileEntry.of("file1.txt", "c://temp", 1000L, "hash");
         FileEntry file2 = FileEntry.of("file2.txt", "c://temp//dir", 1000L, "hash");
         List<FileEntry> files = List.of(file1, file2);
-        updateDb(files, taskExecutionService, fileEntryService);
+        dbUtil.updateDb(files, files.size());
         List<FileEntry> result = StreamSupport.stream(fileEntryService.findAll().spliterator(), false).toList();
         assertAll(
                 () -> assertEquals(2, result.size()),
@@ -55,9 +56,9 @@ class DbUtilTest {
         FileEntry file1 = FileEntry.of("file1.txt", "c://temp", 1000L, "hash");
         FileEntry file2 = FileEntry.of("file2.txt", "c://temp//dir", 1000L, "hash");
         List<FileEntry> files = List.of(file1, file2);
-        updateDb(files, taskExecutionService, fileEntryService);
+        dbUtil.updateDb(files, files.size());
         files = new ArrayList<>();
-        updateDb(files, taskExecutionService, fileEntryService);
+        dbUtil.updateDb(files, 0);
         assertFalse(fileEntryService.findAll().iterator().hasNext());
     }
 
